@@ -4,22 +4,27 @@ from board import WhiteboardDetector
 
 import imutils
 import cv2
+import time
 
-detector = WhiteboardDetector(True)
+detector = WhiteboardDetector(True, True)
 
-def run_video(source = 2):
+def run_video(source = 1):
     vs = VideoStream(src=source).start()
     time.sleep(2.0)
+
+    isLocked = False
 
     while True:
         frame = vs.read()
         
-        board, corners = detector.crop_board(frame)
+        board, corners = detector.crop_board(frame, isLocked)
         cv2.imshow('whiteboard', board)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
             break
+        elif key == ord("l"):
+            isLocked = ~isLocked
 
     cv2.destroyAllWindows()
     vs.stop()
@@ -58,4 +63,5 @@ def run_image():
     cv2.waitKey()
 
 if __name__ == "__main__":
-    run_image()
+    # run_image()
+    run_video()

@@ -25,18 +25,15 @@ class Util:
     @staticmethod
     def calculate_distance(a, b):
         return np.sqrt(((b[0] - a[0]) ** 2) + ((b[1] - a[1]) ** 2))
+    
+    @staticmethod
+    def are_points_close(a, b, r = 25):
+        if (a is None) or (b is None):
+            return False
+        
+        sum_diff = abs(int(a.sum() - b.sum()))
 
-
-# TODO: Code to compare points proximity
-# if points is None:
-#     points = old_points
-# else:
-#     old_sum = old_points.sum() if old_points is not None else 0
-#     new_sum = points.sum()
-
-#     if new_sum in range(int(old_sum) - 5, int(old_sum) + 5):
-#         points = old_points
-#     else:
-#         old_points = points
-
-
+        if (sum_diff <= r):
+            return True
+        else:
+            return False

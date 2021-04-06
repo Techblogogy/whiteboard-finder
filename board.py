@@ -20,7 +20,7 @@ from util import Util
 class WhiteboardDetector:
 
     # TODO: Add debug mode on / off
-    def __init__(self, debug = False, arucoEnabled = True):
+    def __init__(self, debug = False, useAruco = True):
         self._isDebug = debug
 
         self._blockSize = 259 # 105
@@ -30,32 +30,36 @@ class WhiteboardDetector:
 
         self._sigmaValue = 0.02
 
-        self._arucoEnabled = arucoEnabled
+        self._useAruco = useAruco
+
+        self._oldCorners = None
     
-    def crop_board(self, frame):
-        small_frame, ratio = Util.resize_image(frame)
+    def crop_board(self, frame, isLocked = False):
 
-        # Try to find markers first, if no -> attempt auto detection
-        corners = self.extract_corners_aruco(frame)
+        # Feature to lock detection in place (in case people walk in)
+        if isLocked:
+            print("Locked")
+            wrap = self.transform_image(frame, self._oldCorners)
+            return wrap, self._oldCorners
 
-        if (corners is None):
-            print("No Markers Found. Attempting Auto Detection...")
-            screenCnt = self.extract_corners_auto(small_frame)
+        # Detect by using markers or automatically
+        # TODO: Think of a better way / logic to merge theese
+        if (self._useAruco):
+            corners = self.extract_corners_aruco(frame)
+        else:
+            corners = self.extract_corners_auto(frame)
 
-            corners = self.get_corners_coords(screenCnt)
-            corners *= ratio
+        # Prevents wiggle during video
+        if corners is None:
+            corners = self._oldCorners
+        elif Util.are_points_close(corners, self._oldCorners):
+            corners = self._oldCorners
+        else:
+            self._oldCorners = corners
 
         # TODO: If less than 4 markers found, attemt to combine aruco + big brain
 
-        # TODO: Compare corners between frames, if difference is small, return old ones (or avarage ???)
-
         wrap = self.transform_image(frame, corners)
-
-        if (self._isDebug):
-            Util.draw_corner_points(frame, corners)
-            cv2.imshow('frame', frame)
-            cv2.imshow('small', small_frame)
-            # cv2.imshow('wrap', wrap)
 
         return wrap, corners
     
@@ -78,7 +82,8 @@ class WhiteboardDetector:
         return self.get_corners_coords(corners, 16)
 
     # Automaticaly Extract Whiteboard Corners
-    def extract_corners_auto(self, frame):
+    def extract_corners_auto(self, big_frame):
+        frame, ratio = Util.resize_image(big_frame)
 
         ###### GRAYSCALE & BLUR IMAGE ######
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -160,76 +165,15 @@ class WhiteboardDetector:
                 # print(screenCnt)
                 # cv2.drawContours(frame, [screenCnt], -1, (0, 0, 255))
 
-        return screenCnt
+        corners = self.get_corners_coords(screenCnt)
+        corners *= ratio
 
-    # (Alternative Way) To Auto Extract Whiteboard Corners
-    def extract_corners_auto2(self, frame):
+        if (self._isDebug):
+            Util.draw_corner_points(big_frame, corners)
+            cv2.imshow('frame', big_frame)
+            cv2.imshow('small', frame)
 
-        ##### INIT VARS #####
-        precision = 0.12
-        canny1 = 30
-        canny2 = 265
-
-        biggestAreaContours = None
-        largestAreaFound = 0
-
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.bilateralFilter(gray, 5, 17, 17)
-        edged = cv2.Canny(gray, canny1, canny2)
-
-        cv2.imshow('gray', gray)
-        cv2.imshow('edged', edged)
-
-        # FIND THE SCREEN
-        # find contours in the edged image, keep only the largest
-        # ones, and initialize our screen contour
-        cnts = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:10]
-        screenCnt = None
-        area = None
-
-        # Use cached contours, if any
-        screenCnt = biggestAreaContours
-
-        # loop over our contours WHICH ARE NOW SORTED IN ORDER FROM BIGGEST DOWN
-        for c in cnts:
-            cv2.drawContours(frame, [c], -1, (0, 255, 0))
-
-            # approximate the contour
-            peri = cv2.arcLength(c, True)
-            area = cv2.contourArea(c)
-
-            # There is no way a tiny board can happen so limit min size
-            if (area < largestAreaFound-100):
-                continue
-            
-            # This area is smaller than previously cached one, don't use it
-            elif (area < largestAreaFound):
-                continue
-
-            approxOutline = cv2.approxPolyDP(c, precision * peri, True)
-
-            cv2.drawContours(frame, [approxOutline], -1, (255, 0, 0))
-
-            # if our approximated contour has four or more points, then
-            # we can assume that we have found our screen and can do further
-            # processing if needed
-            if len(approxOutline) >= 4:
-                
-                # qcif we made it this far it is a good contour and so we can save it
-                largestAreaFound = area
-                biggestAreaContours = approxOutline
-
-                cv2.drawContours(frame, [approxOutline], -1, (0, 0, 255))
-
-                screenCnt = approxOutline
-                break
-
-        if screenCnt is None:
-            print('Not Found')
-
-        return screenCnt
+        return corners
 
     # Extract 4 edge points from shape
     def get_corners_coords(self, corners, size = -1):
