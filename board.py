@@ -23,6 +23,7 @@ class WhiteboardDetector:
     def __init__(self, debug = False, useAruco = True):
         self._isDebug = debug
 
+        # Used for auto-detection, image threshold
         self._blockSize = 259 # 105
         self._C = -10 # -6
 

@@ -6,7 +6,7 @@ import imutils
 import cv2
 import time
 
-detector = WhiteboardDetector(True, True)
+detector = WhiteboardDetector(False, True)
 
 def run_video(source = 1):
     vs = VideoStream(src=source).start()
