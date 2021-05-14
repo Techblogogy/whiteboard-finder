@@ -8,7 +8,7 @@ import time
 
 detector = WhiteboardDetector(False, True)
 
-def run_video(source = 1):
+def run_video(source = 0):
     vs = VideoStream(src=source).start()
     time.sleep(2.0)
 
