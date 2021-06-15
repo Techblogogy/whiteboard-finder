@@ -6,6 +6,8 @@ import imutils
 import cv2
 import time
 
+import argparse
+
 detector = WhiteboardDetector(False, True)
 
 def run_video(source = 0):
@@ -29,7 +31,7 @@ def run_video(source = 0):
     cv2.destroyAllWindows()
     vs.stop()
 
-def run_image():
+def run_image_test():
     frame = cv2.imread('test-data/B87D0402-BE24-4115-B92C-1768EC139DFE.JPG')
     # frame = cv2.imread('test-data/76A8B258-7DE1-435D-8686-4E788990A6E9.JPG') # Bad Work
     # frame = cv2.imread('test-data/31B8DBD6-A853-401A-B8B5-D17B44DFAF73.JPG') 
@@ -61,7 +63,21 @@ def run_image():
     print(corners)
 
     cv2.waitKey()
+ 
+def run_image(path):
+    frame = cv2.imread(path)
+    board, corners = detector.crop_board(frame)
+    cv2.imwrite('output.jpeg', board)
 
 if __name__ == "__main__":
-    # run_image()
-    run_video()
+    parser = argparse.ArgumentParser(description='Script that captures & crops the whiteboard')
+    parser.add_argument('--path', type=str, help="Path to image if Image")
+
+    args = parser.parse_args()
+
+    print(args.path)
+
+    if args.path is None:
+        run_video()
+    else:
+        run_image(args.path)
