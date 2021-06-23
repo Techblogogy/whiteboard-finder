@@ -8,9 +8,14 @@ import time
 
 import argparse
 
-detector = WhiteboardDetector(False, True)
+def get_detector(mode):
+    isAruco = mode is "aruco"
+    detector = WhiteboardDetector(False, isAruco)
 
-def run_video(source = 0):
+    return detector
+
+def run_video(mode, source = 0):
+    detector = get_detector(mode)
     vs = VideoStream(src=source).start()
     time.sleep(2.0)
 
@@ -32,6 +37,7 @@ def run_video(source = 0):
     vs.stop()
 
 def run_image_test():
+    detector = get_detector('aruco')
     frame = cv2.imread('test-data/B87D0402-BE24-4115-B92C-1768EC139DFE.JPG')
     # frame = cv2.imread('test-data/76A8B258-7DE1-435D-8686-4E788990A6E9.JPG') # Bad Work
     # frame = cv2.imread('test-data/31B8DBD6-A853-401A-B8B5-D17B44DFAF73.JPG') 
@@ -64,7 +70,8 @@ def run_image_test():
 
     cv2.waitKey()
  
-def run_image(path):
+def run_image(path, mode):
+    detector = get_detector(mode)
     frame = cv2.imread(path)
     board, corners = detector.crop_board(frame)
     cv2.imwrite('output.jpeg', board)
@@ -72,12 +79,13 @@ def run_image(path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that captures & crops the whiteboard')
     parser.add_argument('--path', type=str, help="Path to image if Image")
+    parser.add_argument('--mode', type=str, default="aruco", help="aruco or auto") #TODO: Replace with isAruco bool
+    parser.add_argument('--camera', type=int, default=0, help="aruco or auto") #TODO: Replace with isAruco bool
+    # TODO: Add camera source argument
 
     args = parser.parse_args()
 
-    print(args.path)
-
     if args.path is None:
-        run_video()
+        run_video(args.mode, args.camera)
     else:
-        run_image(args.path)
+        run_image(args.path, args.mode)

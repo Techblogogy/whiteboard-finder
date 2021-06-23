@@ -1,0 +1,5 @@
+#!/bin/bash
+
+conda activate cv
+python run.py
+
