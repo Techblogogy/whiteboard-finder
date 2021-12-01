@@ -5,7 +5,7 @@ To execure use `run.py`
 
 # How to run on M1 
 
-## Installing python & opencv. 
+## Installing dependencies
 
 First install anaconda from website
 
